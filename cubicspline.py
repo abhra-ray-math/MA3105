@@ -150,4 +150,15 @@ plt.xlabel("x")
 plt.ylabel("y")
 plt.legend()
 plt.grid(True)
+
+
+err_vals=[]
+for i in range(len(all_x_vals)):
+    err_vals.append(abs((np.exp(all_x_vals[i])-all_y_vals[i])))
+
+plt.figure(figsize=(8,6))
+plt.title("Sup Norm Error (%s points)"%n_ini)
+plt.xlabel("x")
+plt.ylabel("Error")
+plt.plot(all_x_vals,err_vals)
 plt.show()
