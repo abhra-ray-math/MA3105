@@ -34,7 +34,7 @@ def jacobi(A, b, x0, tol, n_iterations=300):
         
     
     print("Number of Iterations: ", counter)
-    #print("Norm of Difference: ", x_diff)
+    print("L2 Norm Error in Jacobi method: ", x_diff)
     return x
 
 
@@ -42,7 +42,7 @@ def cubic_spline(x, y, tol = 1e-10):
     """
     Interpolate using natural cubic splines.
     
-    Generates a strictly diagonal dominant matrix then applies Jacobi's method.
+    Generates a strictly diagonal dominant matrix then applies Jacobi's method,to get k_i parameters.
     """ 
     x = np.array(x)
     y = np.array(y)
@@ -80,47 +80,69 @@ def cubic_spline(x, y, tol = 1e-10):
     #print("Solution",np.linalg.solve(A,b))
     print('Jacobi Method Output:')
     c = jacobi(A, b, np.zeros(len(b)), tol = tol, n_iterations=1000)
-    print(c)
+    #print(c)
     return(c)
       
-
-x1=np.linspace(-1,1,10)
-y1=np.exp(x1)
-#print(x,y)
-k=cubic_spline(x1,y1)
-k=list(k)
-x=list(x1)
-y=list(y1)
-a=list(np.zeros(len(k)-1))
-b=list(np.zeros(len(k)-1))
-#print(len(k))
-for i in range(len(k)-1):
-    a[i] = (k[i]*(x[i+1]-x[i])) - (y[i+1]-y[i])
-    b[i] = ((-k[i+1])*(x[i+1]-x[i])) + (y[i+1]-y[i])
-
-print("\n",a,"\n",b)
-
-# Function to evaluate q(t) for a given interval
-def q_t(t, y_i, y_i1, a_i, b_i):
-    return (1 - t) * y_i + t * y_i1 + t * (1 - t) * ((1 - t) * a_i + t * b_i)
-
-# Define the number of points for smooth plotting
-num_points = 1000
 
 # Prepare the plot
 plt.figure(figsize=(8, 6))
 
-# Loop through each interval to compute and plot q(t)
-for i in range(len(x) - 1):
-    t_vals = np.linspace(0, 1, num_points)  # t in [0, 1]
-    x_vals = np.linspace(x[i], x[i + 1], num_points)  # Map t to the actual x-interval
-    y_vals = q_t(t_vals, y[i], y[i + 1], a[i], b[i])  # Evaluate q(t) for the interval
-    
-    # Plot the spline for this interval
-    plt.plot(x_vals, y_vals)
-    
-# Plot the original data points
-plt.scatter(x, y, color='red', label='Data Points',marker='.')
+
+for n_ini in [5,10,20,40]:
+    print("\n------------------------------------\n")
+    print("Taking %d Points."%n_ini)
+    #Declare points for interpolation
+    x1=np.linspace(-1,1,n_ini)
+    y1=np.exp(x1)
+
+
+    #print(x,y)
+    k=cubic_spline(x1,y1)
+    k=list(k)
+    x=list(x1)
+    y=list(y1)
+    a=list(np.zeros(len(k)-1))
+    b=list(np.zeros(len(k)-1))
+    #print(len(k))
+
+    ### Use k_i parameters to generate a_i and b_i parameters.
+    for i in range(len(k)-1):
+        a[i] = (k[i]*(x[i+1]-x[i])) - (y[i+1]-y[i])
+        b[i] = ((-k[i+1])*(x[i+1]-x[i])) + (y[i+1]-y[i])
+
+    #print("\n",a,"\n",b)
+
+    # Function to evaluate q(t) for a given interval
+    def q_t(t, y_i, y_i1, a_i, b_i):
+        return (1 - t) * y_i + t * y_i1 + t * (1 - t) * ((1 - t) * a_i + t * b_i)
+
+    # Define the number of points for smooth plotting
+    num_points = 1000
+
+    # Loop through each interval to compute and plot q(t)
+    all_y_vals=[]
+    all_x_vals=[]
+    for i in range(len(x) - 1):
+        t_vals = np.linspace(0, 1, num_points)  # t in [0, 1]
+        x_vals = np.linspace(x[i], x[i + 1], num_points)  # Map t to the actual x-interval pointwise
+        y_vals = q_t(t_vals, y[i], y[i + 1], a[i], b[i])  # Evaluate q(t) for the interval
+        all_x_vals+=list(x_vals)
+        all_y_vals+=list(y_vals)
+        # Plot the spline for this interval
+        plt.plot(x_vals, y_vals)
+        
+    # Plot the original data points
+    plt.scatter(x, y, label='Data Points (%d)'%n_ini,marker='.')
+
+    #(USE ONLY IF FUNCTION KNOWN)
+    #Find supnorm error in interpolation (DEPENDS ON INPUT FUNCTION)
+    supnorm=0
+    for i in range(len(all_x_vals)):
+        if (abs((np.exp(all_x_vals[i])-all_y_vals[i]))>supnorm):
+            supnorm=(abs(np.exp(all_x_vals[i])-all_y_vals[i]))
+    print("Supnorm Error in Interpolation: ",(supnorm))
+    hh=np.linspace(-1,1,10000)
+    #plt.plot(hh,np.exp(hh))
 
 # Finalize the plot
 plt.title("Cubic Spline Interpolation")
@@ -129,4 +151,3 @@ plt.ylabel("y")
 plt.legend()
 plt.grid(True)
 plt.show()
-
